@@ -1,0 +1,188 @@
+<style type="text/css">
+
+#.reveal section body{ /* Normal  */
+#   font-size: 12px;
+#}
+#.reveal section td {  /* Table  */
+#   font-size: 8px;
+#}
+#.reveal section h1 { /* Header 1 */
+# font-size: 28px;
+# color: DarkBlue;
+#}
+#.reveal section h2 { /* Header 2 */
+# font-size: 22px;
+# color: DarkBlue;
+#}
+#.reveal section h3 { /* Header 3 */
+# font-size: 18px;
+# color: DarkBlue;
+#}
+.reveal section code { /* Code block */
+  font-size: 0.75em;
+}
+.reveal section pre { /* Code block */
+  font-size: 0.75em
+}
+</style>
+
+
+RNA-Seq Tutorial
+========================================================
+author: Kent Riemondy
+date: 03/14/2017
+autosize: true
+
+```{r setup, include = FALSE}
+opts_chunk$set(cache=TRUE)
+```
+
+Outline
+========================================================
+
+- Introduce RNA-Seq Methods and Analysis
+- RNA-Seq Vignette
+- EDA analysis
+
+What is RNA-Seq?
+========================================================
+
+```{r, out.width = "600px", echo = F}
+knitr::include_graphics("img/nmeth.1371-F5.jpg")
+```
+
+<small>Computation for ChIP-seq and RNA-seq studies. Nature Methods 2009. </small>
+
+Types of RNA-Seq methods
+========================================================
+
+
+- Poly-A+/-Seq
+- 3'end-Seq
+- Clip-Seq
+- Ribo-Seq
+- RNA modification-seqs
+- Single-Cell RNA-Seq
+
+Tools for mRNA-Seq Analysis
+========================================================
+incremental: true
+
+- <small>Align reads to genome
+  * Bowtie2 
+  * **Tophat2/Hisat2** 
+  * STAR 
+  * Kallisto/Salmon  
+- Count reads per gene
+  * **featureCounts (Rsubread R pkg)**
+  * HTSeq-count (Python script)
+  * Bedtools multicov (Command line C++)
+  * RSEM/Kallisto/Salmon (Command line C++)
+</small>
+
+***
+
+- <small>Differential Expression
+  * **DESeq2**
+  * edgeR
+  * Sleuth (works with Kallisto/RSEM)
+  * Alpine 
+- Exploratory Data Analysis
+  * Heatmaps (Complex Heatmap (R pkg))
+  * GO analysis (TopGO, DAVID)
+  * GSEA (Broad Insitute)
+  * Clustering (`prcomp()`, `kmeans()`)
+</small>
+
+How to count reads per gene?
+=========================================================
+right: 40%
+incremental: true
+
+- Assign alignment to a genome feature (gene/transcript/exon)
+- How to handle reads that align to multiple places?
+- How much overlap necessary?
+- How to handle overlapping annotations?
+- One approach
+  * Count only high quality alignments (*uniquely aligned*) 
+  * Discard alignments overlapping multiple annotations
+  
+***
+```{r, out.width = "300px", echo = F}
+knitr::include_graphics("img/count_mode_cropped.png")
+```
+
+<small>Modified from HTSeq [documentation](http://www-huber.embl.de/users/anders/HTSeq/doc/index.html). </small>
+
+Count Matrix
+=========================================================
+```{r echo = F}
+library(DESeq2)
+library("pasilla")
+pasCts <- system.file("extdata", "pasilla_gene_counts.tsv",
+                 package="pasilla", mustWork=TRUE)
+pasAnno <- system.file("extdata", "pasilla_sample_annotation.csv",
+                       package="pasilla", mustWork=TRUE)
+countData <- as.matrix(read.csv(pasCts,sep="\t",row.names="gene_id"))
+colData <- read.csv(pasAnno, row.names=1)
+colData <- colData[,c("condition","type")]
+
+rownames(colData) <- sub("fb","",rownames(colData))
+countData <- countData[, rownames(colData)]
+
+dds <- DESeqDataSetFromMatrix(countData = countData,
+                              colData = colData,
+                              design = ~ condition)
+dds <- dds[ rowSums(counts(dds)) > 1, ]
+dds$condition <- relevel(dds$condition, ref="untreated")
+dds <- DESeq(dds)
+res <- results(dds)
+resMLE <- results(dds, addMLE=TRUE)
+```
+
+```{r}
+head(countData)
+```
+
+<small>
+To generate a count matrix you need:
+- Alignment files ([BAM](https://samtools.github.io/hts-specs/SAMv1.pdf))
+- Annotation file (Gene Transfer Format [GTF](http://uswest.ensembl.org/info/data/ftp/index.html), [description](http://plants.ensembl.org/info/website/upload/gff.html))
+- featureCounts, HTSeq-Count, Bedtools 
+</small>
+Differential Expression, more than Fold-Changes
+=========================================================
+left: 10%
+title: FALSE
+***
+```{r ma_plot, echo = F, message = F, warning = F, fig.width = 10, fig.height = 10}
+plotMA(resMLE, alpha = 0, MLE=TRUE, main = "Comparing Treated to Untreated", ylim=c(-2,2), xlab = "Mean Counts per Gene")
+```
+
+Differential Expression, part ii
+=========================================================
+left: 10%
+title: FALSE
+***
+```{r ma_plot_sig, echo = F, message = F, warning = F, fig.width = 10, fig.height = 10}
+
+plotMA(res, alpha = 0.05, main="Comparing Treated to Untreated", ylim=c(-2,2), xlab = "Mean Counts per Gene")
+```
+
+
+Basic Steps for DESeq2 analysis
+=========================================================
+
+- Normalize between different samples (reduce effects from different sequencing depths)
+- estimate dispersion for each gene to fit a model
+- fit to a negative binomial glm. 
+- perform statistical tests based on supplied model design
+
+```{r eval = F}
+# single factor
+design = ~ treatment
+
+#multiple factor
+design = ~ treatment + disease
+```
+<small> DESeq2 [paper](http://genomebiology.biomedcentral.com/articles/10.1186/s13059-014-0550-8) </small>
