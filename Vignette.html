@@ -194,8 +194,8 @@ fc_SE &lt;- featureCounts(files = bams,
 ## ||                           S data/bams//SRR1029157/alignments_sorted_su ... ||
 ## ||                           S data/bams//SRR1029158/alignments_sorted_su ... ||
 ## ||                                                                            ||
-## ||             Output file : ./.Rsubread_featureCounts_pid2908                ||
-## ||                 Summary : ./.Rsubread_featureCounts_pid2908.summary        ||
+## ||             Output file : ./.Rsubread_featureCounts_pid3165                ||
+## ||                 Summary : ./.Rsubread_featureCounts_pid3165.summary        ||
 ## ||              Annotation : dbases/genes.gtf (GTF)                           ||
 ## ||      Dir for temp files : .                                                ||
 ## ||                                                                            ||
@@ -264,7 +264,7 @@ fc_SE &lt;- featureCounts(files = bams,
 </div>
 <div id="deseq2" class="section level2">
 <h2>DESeq2</h2>
-<p>Next, we’’ use</p>
+<p>Next, we’ll use <code>DESeq2</code> to identify genes that are significantly differentially expressed between the middle and late time points during the <code>YMC</code>.</p>
 <pre class="r"><code>metadata &lt;- read_tsv(&quot;data/metadata.txt&quot;)</code></pre>
 <pre><code>## Parsed with column specification:
 ## cols(

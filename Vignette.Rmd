@@ -65,7 +65,8 @@ fc_SE <- featureCounts(files = bams,
 ```
 
 ## DESeq2
-  Next, we'' use
+  Next, we'll use `DESeq2` to identify genes that are significantly differentially expressed between the middle and late time points during the `YMC`. 
+  
 ```{r deseq}
 metadata <- read_tsv("data/metadata.txt")
 
